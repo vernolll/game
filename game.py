@@ -14,7 +14,8 @@ def move_wrap(canvas, obj, move):
         canvas.move(obj, 0, 600)
 
 def key_pressed(event):
-    global stop_counter
+    global stop_counter, dont_move
+
     if event.keysym == 'Up':
         move_wrap(canvas, player, (0, -step))
     if event.keysym == 'Down':
@@ -25,12 +26,25 @@ def key_pressed(event):
         move_wrap(canvas, player, (step, 0))
 
     for enemy in enemies:
-        if stop_counter == 0:
-            move = move_towards(enemy)
-            move_wrap(canvas, enemy, move)
-        else:
-            stop_counter -= 1
-            move_wrap(canvas, enemy, (0, 0))
+
+            dont_move = [0, 0]
+            if stop_counter == 0:
+                move = move_towards(enemy)
+                if (canvas.coords(enemy)[0] + move[0] == canvas.coords(exit_)[0] and
+                        canvas.coords(enemy)[1] + move[1] == canvas.coords(exit_)[1]):
+                    move = move_towards(enemy)
+                for f in fires:
+                    if (canvas.coords(enemy)[0] + move[0] == canvas.coords(f)[0] and
+                            canvas.coords(enemy)[1] + move[1] == canvas.coords(f)[1]):
+                        move = move_towards(enemy)
+                for s in stars:
+                    if (canvas.coords(enemy)[0] + move[0] == canvas.coords(s)[0] and
+                            canvas.coords(enemy)[1] + move[1] == canvas.coords(s)[1]):
+                        move = move_towards(enemy)
+                move_wrap(canvas, enemy, move)
+            else:
+                stop_counter -= 1
+                move_wrap(canvas, enemy, (0, 0))
 
     check_move()
 
@@ -58,15 +72,21 @@ def do_nothing():
     pass
 
 def move_towards(enemy):
+    global dont_move
     enemy_x, enemy_y = canvas.coords(enemy)
     player_x, player_y = canvas.coords(player)
-    if enemy_x < player_x:
+    print(dont_move)
+    if enemy_x < player_x and dont_move[0] != 1:
+        dont_move = [1, 0]
         return (step, 0)
-    elif enemy_x > player_x:
+    elif enemy_x > player_x and dont_move[0] != 1:
+        dont_move = [1, 0]
         return (-step, 0)
-    elif enemy_y < player_y:
+    elif enemy_y < player_y and dont_move[1] != 1:
+        dont_move = [0, 1]
         return (0, step)
-    elif enemy_y > player_y:
+    elif enemy_y > player_y and dont_move[1] != 1:
+        dont_move = [0, 1]
         return (0, -step)
     else:
         return (0, 0)
@@ -116,7 +136,8 @@ def check_positions():
     return True
 
 def prepare_and_start():
-    global player, exit_, fires, enemies, stars, stop_counter
+    global player, exit_, fires, enemies, stars, stop_counter, dont_move
+    dont_move = [0, 0]
     canvas.delete("all")
     stop_counter = 0
     player_pos = (random.randint(0, N_X - 1) * step, random.randint(0, N_Y - 1) * step)
